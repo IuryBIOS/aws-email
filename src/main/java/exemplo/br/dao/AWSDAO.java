@@ -83,30 +83,35 @@ public class AWSDAO {
   * @param lstAnexos
   * @return Objeto Message configurado e pronto para uso do SesClient
   */
- private static Message prepararMensagemEmail(String sRemetente,String sDestinatario,String sAssunto,String sMensagem,ArrayList<Anexo> lstAnexos){
-  Properties properties=new Properties();
-  Session session=Session.getDefaultInstance(properties);
-  Message message=new MimeMessage(session);
-
-  MimeMultipart corpoEmail = new MimeMultipart("alternative");
-  MimeBodyPart mensagemEmail = new MimeBodyPart();
-
-  try {
-   message.setSubject(sAssunto);
-   message.setFrom(new InternetAddress(sRemetente));
-   message.setRecipient(Message.RecipientType.TO,new InternetAddress(sDestinatario));
-   if(sMensagem.toLowerCase().contains("<html")){
-    mensagemEmail.setContent(sMensagem,"text/html; charset=UTF-8");
-   }else{
-    mensagemEmail.setContent(sMensagem,"text/plain; charset=ISO_8859_1");
+  private static Message prepararMensagemEmail(String sRemetente,String sDestinatario,String sAssunto,String sMensagem,ArrayList<Anexo> lstAnexos){
+   Properties properties=new Properties();
+   Session session=Session.getDefaultInstance(properties);
+   Message message=new MimeMessage(session);
+   MimeMultipart corpoTexto = new MimeMultipart("alternative");
+   MimeBodyPart mensagemEmail = new MimeBodyPart();
+   MimeMultipart corpoComAnexos = new MimeMultipart("mixed");
+   MimeBodyPart containerEmail = new MimeBodyPart();
+   try {
+    message.setSubject(sAssunto);
+    message.setFrom(new InternetAddress(sRemetente));
+    message.setRecipient(Message.RecipientType.TO,new InternetAddress(sDestinatario));
+    if(sMensagem.toLowerCase().contains("<html")){
+     mensagemEmail.setContent(sMensagem,"text/html; charset=UTF-8");
+    }else{
+     mensagemEmail.setContent(sMensagem,"text/plain; charset=ISO_8859_1");
+    }
+    corpoTexto.addBodyPart(mensagemEmail);
+    if(!lstAnexos.isEmpty()){
+     containerEmail.setContent(corpoTexto);
+     corpoComAnexos=prepararAnexosEmail(lstAnexos);
+     corpoComAnexos.addBodyPart(containerEmail);
+    }
+    message.setContent(corpoComAnexos);
+   } catch (MessagingException e) {
+    System.out.println("Erro ao configurar mensagem: "+e);
    }
-   corpoEmail.addBodyPart(mensagemEmail);
-   message.setContent(corpoEmail);
-  } catch (MessagingException e) {
-   System.out.println("Erro ao configurar mensagem: "+e);
+   return message;
   }
-  return message;
- }
  /**
   * Desconstrui a lstParametros separando sRemetente, sDestinatario, sAssunto,
   * sMensagem. Invoca o metodo prepararMensagemEmail para receber o objeto 
